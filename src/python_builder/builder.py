@@ -1,18 +1,21 @@
-from functools import wraps
+import inspect
 from typing import Any, Dict, Type, TypeVar, Generic
-from dataclasses import is_dataclass, fields as dataclass_fields
-from pydantic import BaseModel
 
 T = TypeVar("T")
+
+
+def get_init_params(cls):
+    return (param for param in inspect.signature(cls.__init__).parameters if param != 'self')
 
 
 class Builder(Generic[T]):
     def __init__(self, cls: Type[T], initial_values: Dict[str, Any] = None):
         self._cls = cls
-        self._values = initial_values.copy() if initial_values else {}
+        self._values = initial_values.copy() if initial_values else {k: None for k in get_init_params(cls)}
 
     def set(self, property_name: str, value: Any) -> "Builder[T]":
-        if not self._has_property(property_name):
+        assert isinstance(property_name, str), "property_name must be a string!"
+        if property_name not in get_init_params(self._cls) and not hasattr(self._cls, property_name):
             raise AttributeError(
                 f"Property '{property_name}' is not defined in {self._cls.__name__}"
             )
@@ -30,24 +33,7 @@ class Builder(Generic[T]):
         return Builder(self._cls, combined_values)
 
     def build(self) -> T:
-        if is_dataclass(self._cls):
-            return self._cls(**{k: v for k, v in self._values.items() if v is not None})
-        elif issubclass(self._cls, BaseModel):
-            return self._cls(**{k: v for k, v in self._values.items() if v is not None})
-        else:
-            instance = self._cls()
-            annotations = getattr(self._cls, "__annotations__", {})
-            for attr in annotations.keys():
-                setattr(instance, attr, self._values.get(attr, None))
-            return instance
-
-    def _has_property(self, property_name: str) -> bool:
-        if is_dataclass(self._cls):
-            return any(f.name == property_name for f in dataclass_fields(self._cls))
-        elif issubclass(self._cls, BaseModel):
-            return property_name in self._cls.model_fields
-        else:
-            return property_name in getattr(self._cls, "__annotations__", {})
+        return self._cls(**{k: v for k, v in self._values.items()})
 
 
 def add_builder(cls: Type[T]) -> Type[T]:

@@ -12,10 +12,10 @@ class RegularClass:
     b: str
     c: bool
 
-    def __init__(self):
-        self.a = None
-        self.b = None
-        self.c = None
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
 
 
 @add_builder
@@ -41,6 +41,11 @@ class SlotClass:
     x: int
     y: str
     z: bool
+
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
 
 
 def test_regular_class_builder_set_valid():
