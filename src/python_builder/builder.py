@@ -27,15 +27,24 @@ class Builder(Generic[T]):
         return Builder(self._cls, combined_values)
 
     def build(self) -> T:
-        return self._cls(**{k: v for k, v in self._values.items() if v is not None})
+        if is_dataclass(self._cls):
+            return self._cls(**{k: v for k, v in self._values.items() if v is not None})
+        elif issubclass(self._cls, BaseModel):
+            return self._cls(**{k: v for k, v in self._values.items() if v is not None})
+        else:
+            instance = self._cls()
+            annotations = getattr(self._cls, '__annotations__', {})
+            for attr in annotations.keys():
+                setattr(instance, attr, self._values.get(attr, None))
+            return instance
 
     def _has_property(self, property_name: str) -> bool:
         if is_dataclass(self._cls):
             return any(f.name == property_name for f in dataclass_fields(self._cls))
         elif issubclass(self._cls, BaseModel):
-            return property_name in self._cls.__fields__
+            return property_name in self._cls.model_fields
         else:
-            return hasattr(self._cls, property_name)
+            return property_name in getattr(self._cls, '__annotations__', {})
 
 def add_builder(cls: Type[T]) -> Type[T]:
     @classmethod

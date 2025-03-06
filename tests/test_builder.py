@@ -1,5 +1,6 @@
 import pytest
 from dataclasses import dataclass
+from typing import Optional
 from pydantic import BaseModel
 from python_builder.builder import add_builder, Builder
 
@@ -10,22 +11,38 @@ class RegularClass:
     b: str
     c: bool
 
-# Sample Dataclass
+# Sample Regular Python Class
+@add_builder
+class RegularClass:
+    a: int
+    b: str
+    c: bool
+
+    def __init__(self):
+        self.a = None
+        self.b = None
+        self.c = None
 @add_builder
 @dataclass
 class DataClass:
-    x: float
-    y: str
-    z: int
+    x: Optional[float] = None
+    y: Optional[str] = None
+    z: Optional[int] = None
 
 # Sample Pydantic BaseModel
 @add_builder
 class PydanticModel(BaseModel):
-    foo: str
-    bar: int
-    baz: bool
+    foo: Optional[str] = None
+    bar: Optional[int] = None
+    baz: Optional[bool] = None
 
-# Tests for RegularClass Builder
+# Sample Class with __slots__
+@add_builder
+class SlotClass:
+    __slots__ = ['x', 'y', 'z']
+    x: int
+    y: str
+    z: bool
 def test_regular_class_builder_set_valid():
     builder = RegularClass.builder()
     builder = builder.set('a', 10)
@@ -124,7 +141,31 @@ def test_pydantic_builder_override():
     instance = merged.build()
     assert instance.bar == 200
 
-# Additional Tests
+# Tests for SlotClass Builder
+def test_slot_class_builder_set_valid():
+    builder = SlotClass.builder()
+    builder = builder.set('x', 100)
+    builder = builder.set('y', 'slot test')
+    builder = builder.set('z', True)
+    instance = builder.build()
+    assert instance.x == 100
+    assert instance.y == 'slot test'
+    assert instance.z is True
+
+def test_slot_class_builder_set_invalid():
+    builder = SlotClass.builder()
+    with pytest.raises(AttributeError) as excinfo:
+        builder.set('w', 'invalid')  # 'w' is not defined in SlotClass
+    assert "Property 'w' is not defined in SlotClass" in str(excinfo.value)
+
+def test_slot_class_builder_merge():
+    builder1 = SlotClass.builder().set('x', 10)
+    builder2 = SlotClass.builder().set('y', 'merged')
+    merged = builder1 | builder2
+    instance = merged.build()
+    assert instance.x == 10
+    assert instance.y == 'merged'
+    assert instance.z is None  # Should be set to None by default
 def test_builder_initial_values():
     initial = {'a': 5, 'b': 'initial'}
     builder = RegularClass.builder().set('a', initial['a']).set('b', initial['b'])
