@@ -29,7 +29,7 @@ class Builder(Generic[T]):
         return Builder(self._cls, combined_values)
 
     def build(self) -> T:
-        return self._cls(**{k: v for k, v in self._values.items()})
+        return self._cls(**self._values)
 
 
 def add_builder(cls: Type[T]) -> Type[T]:
