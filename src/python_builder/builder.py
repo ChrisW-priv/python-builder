@@ -1,13 +1,11 @@
-import inspect
-from typing import Any, Dict, Type, TypeVar, Generic
+from typing import Any, Dict, Type, TypeVar, Generic, Protocol
 
 T = TypeVar("T")
 
 
-def get_init_params(cls):
-    return (
-        param for param in inspect.signature(cls.__init__).parameters if param != "self"
-    )
+class Buildable(Protocol, Generic[T]):
+    @classmethod
+    def builder(cls) -> "Builder[T]": ...
 
 
 class Builder(Generic[T]):
@@ -32,9 +30,9 @@ class Builder(Generic[T]):
         return self._cls(**self._values)
 
 
-def add_builder(cls: Type[T]) -> Type[T]:
+def add_builder(cls: Type[T]) -> Type[Buildable[T]]:
     @classmethod
-    def builder(cls_inner) -> Builder[T]:
+    def builder(cls_inner) -> "Builder[T]":
         return Builder(cls_inner)
 
     cls.builder = builder
