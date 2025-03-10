@@ -16,6 +16,19 @@ class RegularClass:
 class OtherClass:
     x: float | None = None
 
+    def __init__(self, **kwargs):
+        self.x = kwargs.get("x", None)
+
+
+@add_builder(limit_to_allowed_fields=False)
+class FlexibleClass:
+    a: int
+    b: str
+
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
 
 def test_regular_class_builder_set_valid():
     builder = RegularClass.builder()
@@ -44,12 +57,21 @@ def test_regular_class_builder_merge():
     assert merged.b == "def"
 
 
-def test_regular_class_builder_override():
-    builder1 = RegularClass.builder().set("b", "abc")
-    builder2 = RegularClass.builder().set("b", "def")
-    merged = builder1 | builder2
+def test_regular_class_builder_allow_kwargs():
+    builder = OtherClass.builder()
     with pytest.raises(TypeError):
-        merged.build()
+        builder.set("x", 3.14)
+
+
+def test_regular_class_builder_fail_on_bad_set():
+    builder = RegularClass.builder()
+    with pytest.raises(TypeError):
+        builder.set("a", 10).set("b", "test").set("c", "extra")
+
+
+def test_flexible_class_builder_set_invalid():
+    builder = FlexibleClass.builder()
+    builder.set("a", 10).set("b", "test").set("c", "extra")
 
 
 def test_regular_class_builder_different_classes():

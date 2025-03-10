@@ -1,3 +1,4 @@
+import inspect
 from typing import Any, Dict, Type, TypeVar, Generic, Protocol
 from pydantic import BaseModel
 
@@ -55,6 +56,9 @@ def add_builder(
             allowed_fields = set(cls_inner.__fields__.keys())
         elif hasattr(cls_inner, "__slots__"):
             allowed_fields = set(cls_inner.__slots__)
+        else:
+            init = cls_inner.__init__
+            allowed_fields = set(inspect.signature(init).parameters.keys()) - {"self"}
 
         @classmethod
         def builder(cls_method) -> "Builder[T]":
