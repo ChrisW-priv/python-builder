@@ -127,18 +127,20 @@ print(instance.z)  # Output: True
 
 ### Merging Builders
 
-You can merge multiple builder instances using the `|` operator. In case of conflicting properties, the last set value will take precedence.
+You can merge multiple builder instances using the `|` operator. The resulting builder inherits properties from both builders. In cases of conflicting properties, the values from the builder on the right take precedence.
 
 ```python
-builder1 = RegularClass.builder().set("a", 1)
-builder2 = RegularClass.builder().set("b", "abc")
-merged_builder = builder1 | builder2
-instance = merged_builder.set("c", True).build()
+builder1 = RegularClass.builder().set("a", 1).set("b", "initial")
+builder2 = RegularClass.builder().set("b", "overridden").set("c", True)
+merged_builder = builder1 | builder2  # Merges builder1 and builder2; 'b' from builder2 takes precedence
+instance = merged_builder.build()
 
-print(instance.a)  # Output: 1
-print(instance.b)  # Output: abc
-print(instance.c)  # Output: True
+print(instance.a)  # Output: 1       # Inherited from builder1
+print(instance.b)  # Output: overridden  # Overridden by builder2
+print(instance.c)  # Output: True    # Inherited from builder2
 ```
+
+When merging builders using the `|` operator, the resulting builder combines the properties from both builders. If both builders set the same property, the value from the builder on the right side of the `|` operator overrides the one from the left.
 
 ### Handling Errors
 
