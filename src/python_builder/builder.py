@@ -18,11 +18,9 @@ class Builder(Generic[T]):
     ):
         self._cls = cls
         self._values = initial_values.copy() if initial_values else {}
-        self._allowed_fields = allowed_fields
-        if allowed_fields is None and issubclass(self._cls, BaseModel):
-            self._allowed_fields = set(self._cls.__fields__.keys())
-        elif allowed_fields is None and hasattr(self._cls, "__slots__"):
-            self._allowed_fields = set(self._cls.__slots__)
+        self._allowed_fields = (
+            allowed_fields.copy() if allowed_fields is not None else None
+        )
 
     def set(self, property_name: str, value: Any) -> "Builder[T]":
         assert isinstance(property_name, str), "property_name must be a string!"
@@ -48,10 +46,26 @@ class Builder(Generic[T]):
         return self._cls(**self._values)
 
 
-def add_builder(cls: Type[T]) -> Type[Buildable[T]]:
-    @classmethod
-    def builder(cls_inner) -> "Builder[T]":
-        return Builder(cls_inner)
+def add_builder(
+    cls: Type[T] = None, *, limit_to_allowed_fields=True
+) -> Type[Buildable[T]]:
+    def decorator(cls_inner: Type[T]) -> Type[Buildable[T]]:
+        allowed_fields = None
+        if issubclass(cls_inner, BaseModel):
+            allowed_fields = set(cls_inner.__fields__.keys())
+        elif hasattr(cls_inner, "__slots__"):
+            allowed_fields = set(cls_inner.__slots__)
 
-    cls.builder = builder
-    return cls
+        @classmethod
+        def builder(cls_method) -> "Builder[T]":
+            if limit_to_allowed_fields and allowed_fields is not None:
+                return Builder(cls_method, allowed_fields=allowed_fields)
+            return Builder(cls_method)
+
+        cls_inner.builder = builder
+        return cls_inner
+
+    if cls is None:
+        return decorator
+    else:
+        return decorator(cls)
