@@ -6,12 +6,10 @@ from python_builder.builder import add_builder
 class RegularClass:
     a: int
     b: str
-    c: bool
 
-    def __init__(self, a, b, c):
+    def __init__(self, a, b):
         self.a = a
         self.b = b
-        self.c = c
 
 
 @add_builder
@@ -23,25 +21,27 @@ def test_regular_class_builder_set_valid():
     builder = RegularClass.builder()
     builder = builder.set("a", 10)
     builder = builder.set("b", "test")
-    builder = builder.set("c", True)
     instance = builder.build()
     assert instance.a == 10
     assert instance.b == "test"
-    assert instance.c is True
 
 
-def test_regular_class_builder_set_invalid():
-    builder = RegularClass.builder().set("d", "invalid")
-    with pytest.raises(TypeError):
-        builder.build()
+def test_regular_class_builder_copy():
+    builder = RegularClass.builder()
+    builder1 = builder.set("a", 1)
+    builder2 = builder.set("a", 2)
+    with pytest.raises(KeyError):
+        assert builder._values["a"]
+    assert builder1._values["a"] == 1
+    assert builder2._values["a"] == 2
 
 
 def test_regular_class_builder_merge():
-    builder1 = RegularClass.builder().set("a", 1)
-    builder2 = RegularClass.builder().set("b", "abc")
-    merged = builder1 | builder2
-    with pytest.raises(TypeError):
-        merged.build()
+    builder1 = RegularClass.builder().set("a", 1).set("b", "abc")
+    builder2 = RegularClass.builder().set("b", "def")
+    merged = (builder1 | builder2).build()
+    assert merged.a == 1
+    assert merged.b == "def"
 
 
 def test_regular_class_builder_override():
