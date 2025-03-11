@@ -1,6 +1,13 @@
 import inspect
 from typing import Any, Dict, Type, TypeVar, Generic, Protocol
-from pydantic import BaseModel
+
+try:
+    from pydantic import BaseModel
+
+    pydantic_imported = True
+except ImportError:
+    pydantic_imported = False
+    BaseModel = None
 
 T = TypeVar("T")
 
@@ -52,8 +59,8 @@ def add_builder(
 ) -> Type[Buildable[T]]:
     def decorator(cls_inner: Type[T]) -> Type[Buildable[T]]:
         allowed_fields = None
-        if issubclass(cls_inner, BaseModel):
-            allowed_fields = set(cls_inner.__fields__.keys())
+        if pydantic_imported and issubclass(cls_inner, BaseModel):
+            allowed_fields = cls_inner.model_fields_set
         elif hasattr(cls_inner, "__slots__"):
             allowed_fields = set(cls_inner.__slots__)
         else:
