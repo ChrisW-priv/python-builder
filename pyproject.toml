@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-builder"
-version = "0.4.1"
+version = "0.4.2"
 description = "Implementation of generic python builder"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -21,3 +21,10 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[options]
+packages = "python_builder"
+include_package_data = true
+
+[options.package_data]
+python_builder = "py.typed"

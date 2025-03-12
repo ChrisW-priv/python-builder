@@ -7,7 +7,7 @@ try:
     pydantic_imported = True
 except ImportError:
     pydantic_imported = False
-    BaseModel = None
+    BaseModel = Any
 
 T = TypeVar("T")
 
